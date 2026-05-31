@@ -2,6 +2,7 @@ package com.superduper.sonoswidget.sonos
 
 import android.content.Context
 import android.net.wifi.WifiManager
+import android.util.Log
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -12,27 +13,43 @@ class SonosDiscovery(
     private val httpClient: SonosHttpClient = JavaNetSonosHttpClient()
 ) : SonosGateway {
     override fun discoverPlayers(): List<SonosPlayer> {
-        return discoverLocations()
+        val locations = discoverLocations()
+        Log.i(TAG, "SSDP locations=${locations.size}: $locations")
+        return locations
             .mapNotNull { location ->
-                runCatching {
+                val player = runCatching {
                     SonosXml.parseDeviceDescription(httpClient.get(location), location)
+                }.onFailure { error ->
+                    if (error is IllegalStateException && error.message == "Missing AVTransport service") {
+                        Log.i(TAG, "Ignoring non-player device at $location")
+                    } else {
+                        Log.w(TAG, "Failed to load Sonos device description at $location", error)
+                    }
                 }.getOrNull()
+                if (player != null) {
+                    Log.i(TAG, "Discovered player room=${player.roomName} uuid=${player.uuid} baseUrl=${player.baseUrl}")
+                }
+                player
             }
             .distinctBy { it.uuid }
     }
 
     override fun zoneGroupMembers(player: SonosPlayer): List<ZoneGroupMember> {
         val controlUrl = player.services.zoneGroupTopologyControlUrl ?: return emptyList()
+        Log.i(TAG, "Fetching zone group topology from room=${player.roomName} url=${player.baseUrl + controlUrl}")
         val response = httpClient.soap(
             url = player.baseUrl + controlUrl,
             soapAction = SonosSoap.zoneGroupTopologySoapAction("GetZoneGroupState"),
             envelope = SonosSoap.zoneGroupTopologyEnvelope("GetZoneGroupState")
         )
-        return SonosSoap.parseZoneGroupState(response)
+        return SonosSoap.parseZoneGroupState(response).also { members ->
+            Log.i(TAG, "Zone group members=${members.size}: $members")
+        }
     }
 
     override fun playback(player: SonosPlayer): SonosPlayback {
         val transportUrl = player.baseUrl + player.services.avTransportControlUrl
+        Log.i(TAG, "Fetching playback from room=${player.roomName} url=$transportUrl")
         val state = SonosSoap.parsePlaybackState(
             httpClient.soap(
                 url = transportUrl,
@@ -55,7 +72,9 @@ class SonosDiscovery(
                 envelope = SonosSoap.avTransportEnvelope("GetCurrentTransportActions")
             )
         )
-        return SonosPlayback(player.roomName, state, track, actions)
+        return SonosPlayback(player.roomName, state, track, actions).also {
+            Log.i(TAG, "Playback room=${it.roomName} state=${it.state} title=${it.track.title} actions=${it.actions}")
+        }
     }
 
     override fun play(player: SonosPlayer) = sendTransport(player, "Play", "<Speed>1</Speed>")
@@ -75,6 +94,7 @@ class SonosDiscovery(
     }
 
     private fun discoverLocations(): List<String> {
+        Log.i(TAG, "Starting SSDP discovery")
         val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val lock = wifi.createMulticastLock("sonos-widget-ssdp").apply {
             setReferenceCounted(false)
@@ -116,10 +136,18 @@ class SonosDiscovery(
                     ?.let { locations += it }
             }
         } catch (_: SocketTimeoutException) {
+            Log.i(TAG, "SSDP discovery timed out with ${locations.size} location(s)")
+            return locations.toList()
+        } catch (error: Exception) {
+            Log.w(TAG, "SSDP discovery failed", error)
             return locations.toList()
         } finally {
             socket.close()
             if (lock.isHeld) lock.release()
         }
+    }
+
+    companion object {
+        private const val TAG = "SonosWidget"
     }
 }

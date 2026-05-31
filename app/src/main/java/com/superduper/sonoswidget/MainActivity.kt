@@ -59,6 +59,8 @@ class MainActivity : Activity() {
             addView(findRooms, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             addView(roomList, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         })
+
+        WidgetUpdater.refreshAsync(this)
     }
 
     private fun maybeRequestLocalNetworkPermission() {

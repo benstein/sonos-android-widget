@@ -77,12 +77,16 @@ object SonosXml {
     private fun parse(xml: String) = DocumentBuilderFactory.newInstance()
         .apply {
             isNamespaceAware = false
-            setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
-            setFeature("http://xml.org/sax/features/external-general-entities", false)
-            setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+            setFeatureIfSupported("http://apache.org/xml/features/disallow-doctype-decl", true)
+            setFeatureIfSupported("http://xml.org/sax/features/external-general-entities", false)
+            setFeatureIfSupported("http://xml.org/sax/features/external-parameter-entities", false)
         }
         .newDocumentBuilder()
         .parse(ByteArrayInputStream(xml.toByteArray(Charsets.UTF_8)))
+
+    private fun DocumentBuilderFactory.setFeatureIfSupported(name: String, value: Boolean) {
+        runCatching { setFeature(name, value) }
+    }
 
     private fun firstServiceControlUrl(root: Element, serviceName: String): String? {
         return elements(root, "service")

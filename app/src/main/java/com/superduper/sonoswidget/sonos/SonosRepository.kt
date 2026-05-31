@@ -1,5 +1,7 @@
 package com.superduper.sonoswidget.sonos
 
+import android.util.Log
+
 sealed class SonosResult {
     data class Available(val playback: SonosPlayback) : SonosResult()
     data class Unavailable(val message: String) : SonosResult()
@@ -26,6 +28,7 @@ class SonosRepository(
     fun currentPlayback(roomName: String?): SonosResult {
         val selected = selectedPlayer(roomName) ?: return SonosResult.Unavailable("Choose room")
         val coordinator = coordinatorFor(selected)
+        Log.i(TAG, "Selected room=${selected.roomName} uuid=${selected.uuid}; coordinator=${coordinator.roomName} uuid=${coordinator.uuid}")
         return try {
             SonosResult.Available(gateway.playback(coordinator).copy(roomName = selected.roomName))
         } catch (_: Exception) {
@@ -59,7 +62,9 @@ class SonosRepository(
 
     private fun selectedPlayer(roomName: String?): SonosPlayer? {
         if (roomName.isNullOrBlank()) return null
-        return gateway.discoverPlayers().firstOrNull { it.roomName == roomName }
+        val players = gateway.discoverPlayers()
+        Log.i(TAG, "Looking for selectedRoom=$roomName in rooms=${players.map { it.roomName }}")
+        return players.firstOrNull { it.roomName == roomName }
     }
 
     private fun coordinatorFor(player: SonosPlayer): SonosPlayer {
@@ -75,5 +80,9 @@ class SonosRepository(
 
     private fun String.normalizedUuid(): String {
         return removePrefix("uuid:").trim()
+    }
+
+    companion object {
+        private const val TAG = "SonosWidget"
     }
 }

@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import com.superduper.sonoswidget.sonos.SonosDiscovery
 import com.superduper.sonoswidget.sonos.SonosRepository
 import com.superduper.sonoswidget.sonos.SonosResult
@@ -45,12 +46,18 @@ object WidgetUpdater {
     fun refresh(context: Context) {
         val prefs = SonosPrefs(context)
         val selectedRoom = prefs.selectedRoom
+        Log.i(TAG, "Refreshing widgets. selectedRoom=$selectedRoom")
         val repository = SonosRepository(SonosDiscovery(context))
         val state = when (val result = repository.currentPlayback(selectedRoom)) {
-            is SonosResult.Available -> WidgetState.fromPlayback(result.playback)
+            is SonosResult.Available -> {
+                Log.i(TAG, "Playback available for ${result.playback.roomName}: ${result.playback.state} ${result.playback.track.title}")
+                WidgetState.fromPlayback(result.playback)
+            }
             is SonosResult.Unavailable -> if (selectedRoom.isNullOrBlank()) {
+                Log.w(TAG, "No selected room saved")
                 WidgetState.chooseRoom()
             } else {
+                Log.w(TAG, "Playback unavailable for $selectedRoom: ${result.message}")
                 WidgetState.unavailable(selectedRoom, result.message)
             }
         }
@@ -65,6 +72,7 @@ object WidgetUpdater {
             val options = manager.getAppWidgetOptions(id)
             val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
             val compact = minWidth in 1..244
+            Log.i(TAG, "Updating appWidgetId=$id minWidth=$minWidth compact=$compact title=${state.title}")
             val views = WidgetRenderer.render(
                 context = context,
                 compact = compact,
@@ -96,4 +104,6 @@ object WidgetUpdater {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
+
+    private const val TAG = "SonosWidget"
 }
