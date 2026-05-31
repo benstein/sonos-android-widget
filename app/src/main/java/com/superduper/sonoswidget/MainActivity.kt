@@ -49,6 +49,14 @@ class MainActivity : Activity() {
             text = "Find Sonos rooms"
             setOnClickListener { loadRooms() }
         }
+        val openSonos = Button(this).apply {
+            text = "Open Sonos"
+            setOnClickListener {
+                if (!SonosAppLauncher.open(this@MainActivity)) {
+                    status.text = "Sonos app not found"
+                }
+            }
+        }
 
         setContentView(LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -57,6 +65,7 @@ class MainActivity : Activity() {
             addView(roomInput, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             addView(saveTypedRoom, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             addView(findRooms, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            addView(openSonos, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             addView(roomList, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         })
 

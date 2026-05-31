@@ -216,7 +216,7 @@ object WidgetUpdater {
                 previousIntent = broadcastIntent(context, WidgetActionReceiver.ACTION_PREVIOUS, 1),
                 playPauseIntent = broadcastIntent(context, WidgetActionReceiver.ACTION_PLAY_PAUSE, 2),
                 nextIntent = broadcastIntent(context, WidgetActionReceiver.ACTION_NEXT, 3),
-                rootIntent = activityIntent(context)
+                rootIntent = rootIntent(context)
             )
             manager.updateAppWidget(id, views)
         }
@@ -248,11 +248,13 @@ object WidgetUpdater {
         )
     }
 
-    private fun activityIntent(context: Context): PendingIntent {
+    private fun rootIntent(context: Context): PendingIntent {
+        val intent = SonosAppLauncher.launchIntent(context)
+            ?: Intent(context, MainActivity::class.java)
         return PendingIntent.getActivity(
             context,
             10,
-            Intent(context, MainActivity::class.java),
+            intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
