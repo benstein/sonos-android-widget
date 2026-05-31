@@ -32,6 +32,29 @@ class WidgetStateTest {
     }
 
     @Test
+    fun displayRoomPrefixesSelectedRoomWithSonos() {
+        val state = WidgetState(
+            room = "Dining Room",
+            title = "Song",
+            artist = "Artist",
+            artworkUrl = null,
+            isPlaying = true,
+            previousEnabled = false,
+            nextEnabled = true,
+            controlsEnabled = true
+        )
+
+        assertEquals("SONOS: Dining Room", state.displayRoom)
+    }
+
+    @Test
+    fun displayRoomDoesNotDuplicateGenericSonosLabel() {
+        val state = WidgetState.chooseRoom()
+
+        assertEquals("SONOS", state.displayRoom)
+    }
+
+    @Test
     fun optimisticPlayPauseTogglesPlayingStateAndMarksPending() {
         val state = WidgetState(
             room = "Dining Room",

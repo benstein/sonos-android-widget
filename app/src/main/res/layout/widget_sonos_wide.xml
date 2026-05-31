@@ -51,8 +51,7 @@
             android:ellipsize="end"
             android:maxLines="1"
             android:textColor="#F8FAFC"
-            android:textSize="18sp"
-            android:textStyle="bold"
+            android:textSize="16sp"
             android:includeFontPadding="false" />
 
         <TextView

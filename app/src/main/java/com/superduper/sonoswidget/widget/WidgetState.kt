@@ -14,6 +14,13 @@ data class WidgetState(
     val controlsEnabled: Boolean,
     val isPending: Boolean = false
 ) {
+    val displayRoom: String
+        get() = if (room.equals("Sonos", ignoreCase = true)) {
+            "SONOS"
+        } else {
+            "SONOS: $room"
+        }
+
     fun optimisticPlayPause(): WidgetState {
         return copy(
             isPlaying = !isPlaying,

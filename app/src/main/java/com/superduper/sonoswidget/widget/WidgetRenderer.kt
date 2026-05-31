@@ -20,7 +20,7 @@ object WidgetRenderer {
     ): RemoteViews {
         val layout = layoutFor(compact)
         return RemoteViews(context.packageName, layout).apply {
-            setTextViewText(R.id.room, state.room)
+            setTextViewText(R.id.room, state.displayRoom)
             setTextViewText(R.id.title, state.title)
             setTextViewText(R.id.artist, state.artist)
             setImageViewResource(R.id.play_pause, if (state.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
