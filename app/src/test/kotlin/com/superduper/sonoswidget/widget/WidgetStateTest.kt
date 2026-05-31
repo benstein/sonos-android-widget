@@ -30,4 +30,51 @@ class WidgetStateTest {
         assertTrue(state.nextEnabled)
         assertTrue(state.controlsEnabled)
     }
+
+    @Test
+    fun optimisticPlayPauseTogglesPlayingStateAndMarksPending() {
+        val state = WidgetState(
+            room = "Dining Room",
+            title = "Song",
+            artist = "Artist",
+            artworkUrl = "http://example.test/art.jpg",
+            isPlaying = true,
+            previousEnabled = true,
+            nextEnabled = true,
+            controlsEnabled = true
+        )
+
+        val optimistic = state.optimisticPlayPause()
+
+        assertFalse(optimistic.isPlaying)
+        assertTrue(optimistic.isPending)
+        assertEquals("Song", optimistic.title)
+        assertEquals("Artist", optimistic.artist)
+    }
+
+    @Test
+    fun unknownPlaybackKeepsPendingOptimisticPlayingState() {
+        val previous = WidgetState(
+            room = "Dining Room",
+            title = "Old Song",
+            artist = "Artist",
+            artworkUrl = null,
+            isPlaying = true,
+            previousEnabled = true,
+            nextEnabled = true,
+            controlsEnabled = true,
+            isPending = true
+        )
+        val playback = SonosPlayback(
+            roomName = "Dining Room",
+            state = PlaybackState.UNKNOWN,
+            track = SonosTrack("Song", "Artist", null),
+            actions = SonosTransportActions(canPlay = true, canPause = true, canNext = true, canPrevious = true)
+        )
+
+        val state = WidgetState.fromPlayback(playback, previous)
+
+        assertTrue(state.isPlaying)
+        assertTrue(state.isPending)
+    }
 }

@@ -103,6 +103,7 @@ class MainActivity : Activity() {
 
         prefs.selectedRoom = room
         prefs.cachedCoordinator = null
+        prefs.cachedWidgetState = null
         roomInput.setText(room)
         status.text = selectedRoomText()
         WidgetUpdater.refreshAsync(this)

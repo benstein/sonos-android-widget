@@ -11,8 +11,16 @@ data class WidgetState(
     val isPlaying: Boolean,
     val previousEnabled: Boolean,
     val nextEnabled: Boolean,
-    val controlsEnabled: Boolean
+    val controlsEnabled: Boolean,
+    val isPending: Boolean = false
 ) {
+    fun optimisticPlayPause(): WidgetState {
+        return copy(
+            isPlaying = !isPlaying,
+            isPending = true
+        )
+    }
+
     companion object {
         fun chooseRoom() = WidgetState(
             room = "Sonos",
@@ -36,15 +44,19 @@ data class WidgetState(
             controlsEnabled = false
         )
 
-        fun fromPlayback(playback: SonosPlayback) = WidgetState(
-            room = playback.roomName,
-            title = playback.track.title ?: "Nothing playing",
-            artist = playback.track.artist.orEmpty(),
-            artworkUrl = playback.track.artworkUrl,
-            isPlaying = playback.state == PlaybackState.PLAYING,
-            previousEnabled = playback.actions.canPrevious,
-            nextEnabled = playback.actions.canNext,
-            controlsEnabled = playback.actions.canPlay || playback.actions.canPause
-        )
+        fun fromPlayback(playback: SonosPlayback, previous: WidgetState? = null): WidgetState {
+            val keepPendingState = playback.state == PlaybackState.UNKNOWN && previous?.isPending == true
+            return WidgetState(
+                room = playback.roomName,
+                title = playback.track.title ?: "Nothing playing",
+                artist = playback.track.artist.orEmpty(),
+                artworkUrl = playback.track.artworkUrl,
+                isPlaying = if (keepPendingState) previous.isPlaying else playback.state == PlaybackState.PLAYING,
+                previousEnabled = playback.actions.canPrevious,
+                nextEnabled = playback.actions.canNext,
+                controlsEnabled = playback.actions.canPlay || playback.actions.canPause,
+                isPending = keepPendingState
+            )
+        }
     }
 }

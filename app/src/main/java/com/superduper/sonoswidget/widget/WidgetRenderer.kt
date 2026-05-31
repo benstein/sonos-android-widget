@@ -18,7 +18,7 @@ object WidgetRenderer {
         nextIntent: PendingIntent,
         rootIntent: PendingIntent
     ): RemoteViews {
-        val layout = if (compact) R.layout.widget_sonos_compact else R.layout.widget_sonos_wide
+        val layout = layoutFor(compact)
         return RemoteViews(context.packageName, layout).apply {
             setTextViewText(R.id.room, state.room)
             setTextViewText(R.id.title, state.title)
@@ -26,7 +26,7 @@ object WidgetRenderer {
             setImageViewResource(R.id.play_pause, if (state.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
             setInt(R.id.previous, "setAlpha", if (state.previousEnabled) 255 else 90)
             setInt(R.id.next, "setAlpha", if (state.nextEnabled) 255 else 90)
-            setInt(R.id.play_pause, "setAlpha", if (state.controlsEnabled) 255 else 90)
+            setInt(R.id.play_pause, "setAlpha", playPauseAlpha(state))
             setOnClickPendingIntent(R.id.widget_root, rootIntent)
             setOnClickPendingIntent(R.id.previous, previousIntent)
             setOnClickPendingIntent(R.id.play_pause, playPauseIntent)
@@ -44,6 +44,25 @@ object WidgetRenderer {
                     setViewVisibility(R.id.artwork_fallback, View.GONE)
                 }
             }
+        }
+    }
+
+    fun renderPlayPauseOnly(context: Context, compact: Boolean, state: WidgetState): RemoteViews {
+        return RemoteViews(context.packageName, layoutFor(compact)).apply {
+            setImageViewResource(R.id.play_pause, if (state.isPlaying) R.drawable.ic_pause else R.drawable.ic_play)
+            setInt(R.id.play_pause, "setAlpha", playPauseAlpha(state))
+        }
+    }
+
+    private fun layoutFor(compact: Boolean): Int {
+        return if (compact) R.layout.widget_sonos_compact else R.layout.widget_sonos_wide
+    }
+
+    private fun playPauseAlpha(state: WidgetState): Int {
+        return when {
+            state.isPending -> 170
+            state.controlsEnabled -> 255
+            else -> 90
         }
     }
 }

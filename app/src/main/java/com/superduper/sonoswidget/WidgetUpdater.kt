@@ -30,10 +30,16 @@ object WidgetUpdater {
     }
 
     fun handleActionAsync(context: Context, action: String?, done: () -> Unit) {
+        val appContext = context.applicationContext
+        val prefs = SonosPrefs(appContext)
+        runCatching {
+            showOptimisticPlayPause(appContext, prefs, action)
+        }.onFailure { error ->
+            Log.w(TAG, "Optimistic play/pause update failed", error)
+        }
+
         executor.execute {
             try {
-                val appContext = context.applicationContext
-                val prefs = SonosPrefs(appContext)
                 val startedAt = SystemClock.elapsedRealtime()
                 Log.i(TAG, "Widget action received action=$action selectedRoom=${prefs.selectedRoom}")
                 runCatching {
@@ -44,7 +50,7 @@ object WidgetUpdater {
                     val elapsedMs = SystemClock.elapsedRealtime() - startedAt
                     Log.i(TAG, "Widget action finished action=$action elapsedMs=$elapsedMs")
                 }
-                refresh(appContext)
+                refresh(appContext, preservePendingUnknown = true)
                 scheduleSettlingRefresh(appContext, action)
             } finally {
                 done()
@@ -53,6 +59,10 @@ object WidgetUpdater {
     }
 
     fun refresh(context: Context) {
+        refresh(context, preservePendingUnknown = false)
+    }
+
+    private fun refresh(context: Context, preservePendingUnknown: Boolean) {
         val prefs = SonosPrefs(context)
         val selectedRoom = prefs.selectedRoom
         Log.i(TAG, "Refreshing widgets. selectedRoom=$selectedRoom")
@@ -63,19 +73,36 @@ object WidgetUpdater {
         val state = when (result) {
             is SonosResult.Available -> {
                 Log.i(TAG, "Playback available for ${result.playback.roomName}: ${result.playback.state} ${result.playback.track.title}")
+                val previousState = if (preservePendingUnknown) prefs.cachedWidgetState else null
+                val playbackState = WidgetState.fromPlayback(result.playback, previousState)
                 prefs.cachedCoordinator = result.coordinator
-                WidgetState.fromPlayback(result.playback)
+                prefs.cachedWidgetState = playbackState
+                playbackState
             }
             is SonosResult.Unavailable -> if (selectedRoom.isNullOrBlank()) {
                 Log.w(TAG, "No selected room saved")
+                prefs.cachedWidgetState = null
                 WidgetState.chooseRoom()
             } else {
                 Log.w(TAG, "Playback unavailable for $selectedRoom: ${result.message}")
+                prefs.cachedWidgetState = null
                 WidgetState.unavailable(selectedRoom, result.message)
             }
         }
 
         updateWidgets(context, state)
+    }
+
+    private fun showOptimisticPlayPause(context: Context, prefs: SonosPrefs, action: String?) {
+        if (action != WidgetActionReceiver.ACTION_PLAY_PAUSE) return
+
+        val currentState = prefs.cachedWidgetState ?: return
+        if (!currentState.controlsEnabled) return
+
+        val optimisticState = currentState.optimisticPlayPause()
+        prefs.cachedWidgetState = optimisticState
+        Log.i(TAG, "Optimistically updating play/pause isPlaying=${optimisticState.isPlaying}")
+        updatePlayPauseOnly(context, optimisticState)
     }
 
     private fun scheduleSettlingRefresh(context: Context, action: String?) {
@@ -192,6 +219,22 @@ object WidgetUpdater {
                 rootIntent = activityIntent(context)
             )
             manager.updateAppWidget(id, views)
+        }
+    }
+
+    private fun updatePlayPauseOnly(context: Context, state: WidgetState) {
+        val manager = AppWidgetManager.getInstance(context)
+        val ids = manager.getAppWidgetIds(ComponentName(context, SonosWidgetProvider::class.java))
+        ids.forEach { id ->
+            val options = manager.getAppWidgetOptions(id)
+            val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+            val compact = minWidth in 1..244
+            val views = WidgetRenderer.renderPlayPauseOnly(
+                context = context,
+                compact = compact,
+                state = state
+            )
+            manager.partiallyUpdateAppWidget(id, views)
         }
     }
 
