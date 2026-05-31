@@ -86,11 +86,16 @@ class SonosDiscovery(
     override fun previous(player: SonosPlayer) = sendTransport(player, "Previous")
 
     private fun sendTransport(player: SonosPlayer, action: String, body: String = "") {
+        val url = player.baseUrl + player.services.avTransportControlUrl
+        val startedAt = System.nanoTime()
+        Log.i(TAG, "Sending transport action=$action room=${player.roomName} url=$url")
         httpClient.soap(
-            url = player.baseUrl + player.services.avTransportControlUrl,
+            url = url,
             soapAction = SonosSoap.avTransportSoapAction(action),
             envelope = SonosSoap.avTransportEnvelope(action, body)
         )
+        val elapsedMs = (System.nanoTime() - startedAt) / 1_000_000
+        Log.i(TAG, "Transport action=$action succeeded room=${player.roomName} elapsedMs=$elapsedMs")
     }
 
     private fun discoverLocations(): List<String> {

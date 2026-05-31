@@ -41,6 +41,40 @@ class SonosRepositoryTest {
     }
 
     @Test
+    fun reusesDiscoveryResultWhenResolvingCoordinator() {
+        val dining = SonosPlayer(
+            roomName = "Dining Room",
+            uuid = "uuid:RINCON_DINING",
+            baseUrl = "http://192.168.1.20:1400",
+            services = SonosServices("/MediaRenderer/AVTransport/Control", "/ZoneGroupTopology/Control")
+        )
+        val kitchen = dining.copy(
+            roomName = "Kitchen",
+            uuid = "uuid:RINCON_KITCHEN",
+            baseUrl = "http://192.168.1.21:1400"
+        )
+        val fake = FakeSonosGateway(
+            players = listOf(dining, kitchen),
+            zoneMembers = listOf(
+                ZoneGroupMember("RINCON_DINING", "Dining Room", "RINCON_KITCHEN"),
+                ZoneGroupMember("RINCON_KITCHEN", "Kitchen", "RINCON_KITCHEN")
+            ),
+            playbackByUuid = mapOf(
+                "uuid:RINCON_KITCHEN" to SonosPlayback(
+                    roomName = "Kitchen",
+                    state = PlaybackState.PLAYING,
+                    track = SonosTrack("Song", "Artist", null),
+                    actions = SonosTransportActions(canPlay = false, canPause = true, canNext = true, canPrevious = true)
+                )
+            )
+        )
+
+        SonosRepository(fake).togglePlayPause("Dining Room")
+
+        assertEquals(1, fake.discoverCalls)
+    }
+
+    @Test
     fun ignoresNextWhenTransportActionIsUnavailable() {
         val player = SonosPlayer(
             roomName = "Dining Room",
@@ -80,8 +114,13 @@ class SonosRepositoryTest {
         private val playbackByUuid: Map<String, SonosPlayback> = emptyMap()
     ) : SonosGateway {
         val commands = mutableListOf<String>()
+        var discoverCalls = 0
+            private set
 
-        override fun discoverPlayers(): List<SonosPlayer> = players
+        override fun discoverPlayers(): List<SonosPlayer> {
+            discoverCalls += 1
+            return players
+        }
 
         override fun zoneGroupMembers(player: SonosPlayer): List<ZoneGroupMember> = zoneMembers
 
