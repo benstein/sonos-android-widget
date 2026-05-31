@@ -64,7 +64,16 @@ class SonosRepository(
 
     private fun coordinatorFor(player: SonosPlayer): SonosPlayer {
         val members = runCatching { gateway.zoneGroupMembers(player) }.getOrDefault(emptyList())
-        val coordinatorUuid = members.firstOrNull { it.uuid == player.uuid }?.coordinatorUuid ?: player.uuid
-        return gateway.discoverPlayers().firstOrNull { it.uuid == coordinatorUuid } ?: player
+        val coordinatorUuid = members
+            .firstOrNull { it.uuid.normalizedUuid() == player.uuid.normalizedUuid() }
+            ?.coordinatorUuid
+            ?: player.uuid
+        return gateway.discoverPlayers()
+            .firstOrNull { it.uuid.normalizedUuid() == coordinatorUuid.normalizedUuid() }
+            ?: player
+    }
+
+    private fun String.normalizedUuid(): String {
+        return removePrefix("uuid:").trim()
     }
 }

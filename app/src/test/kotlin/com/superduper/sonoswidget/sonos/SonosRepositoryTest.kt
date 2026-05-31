@@ -21,8 +21,8 @@ class SonosRepositoryTest {
         val fake = FakeSonosGateway(
             players = listOf(dining, kitchen),
             zoneMembers = listOf(
-                ZoneGroupMember("uuid:RINCON_DINING", "Dining Room", "uuid:RINCON_KITCHEN"),
-                ZoneGroupMember("uuid:RINCON_KITCHEN", "Kitchen", "uuid:RINCON_KITCHEN")
+                ZoneGroupMember("RINCON_DINING", "Dining Room", "RINCON_KITCHEN"),
+                ZoneGroupMember("RINCON_KITCHEN", "Kitchen", "RINCON_KITCHEN")
             ),
             playbackByUuid = mapOf(
                 "uuid:RINCON_KITCHEN" to SonosPlayback(
