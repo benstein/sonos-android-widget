@@ -1,8 +1,12 @@
 .gradle/
 .idea/
+.kotlin/
 .superpowers/
 build/
 local.properties
 *.apk
 *.aab
 *.iml
+
+# macOS
+.DS_Store
