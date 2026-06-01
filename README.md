@@ -64,13 +64,18 @@ launcher's widget picker.
 ## Tests
 
 ```bash
+# Run all unit tests
 ./gradlew test
+
+# Run a single test class
+./gradlew test --tests "*SonosXmlTest"
 ```
 
-Unit tests cover the Sonos parsing and SOAP layers: device descriptions,
-topology and group-coordinator selection, DIDL-Lite track metadata, transport
-actions, and SOAP envelope construction. Repository tests use fake clients to
-verify command routing and fallback behavior.
+These are JVM unit tests only; there are no instrumented/device tests. They
+cover the Sonos parsing and SOAP layers: device descriptions, topology and
+group-coordinator selection, DIDL-Lite track metadata, transport actions, and
+SOAP envelope construction. Repository tests use a fake gateway to verify
+command routing and fallback behavior.
 
 ## Permissions
 
@@ -99,4 +104,9 @@ app/src/main/java/com/superduper/sonoswidget/
   widget/                    RemoteViews rendering and widget state
 ```
 
-Design notes and the implementation plan live under `docs/`.
+Design notes and the implementation plan live under `docs/`. Contributor and
+agent guidance is in [AGENTS.md](AGENTS.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
