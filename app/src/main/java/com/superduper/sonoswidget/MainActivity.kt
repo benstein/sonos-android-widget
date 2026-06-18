@@ -2,6 +2,7 @@ package com.superduper.sonoswidget
 
 import android.Manifest
 import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
@@ -17,6 +18,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.superduper.sonoswidget.announce.TalkActivity
 import com.superduper.sonoswidget.sonos.SonosDiscovery
 import com.superduper.sonoswidget.sonos.SonosRepository
 import com.superduper.sonoswidget.storage.SonosPrefs
@@ -74,6 +76,13 @@ class MainActivity : Activity() {
                     saveRoom(roomInput.text?.toString().orEmpty().trim())
                 }, topMargin(matchWrap(), 12))
             }, topMargin(matchWrap(), 22))
+
+            addView(card {
+                addView(label("Talk"), matchWrap())
+                addView(primaryButton("Talk to speakers") {
+                    startActivity(Intent(this@MainActivity, TalkActivity::class.java))
+                }, topMargin(matchWrap(), 14))
+            }, topMargin(matchWrap(), 14))
 
             addView(card {
                 addView(label("Setup"), matchWrap())
