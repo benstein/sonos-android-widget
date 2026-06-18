@@ -16,6 +16,7 @@ object SonosXml {
         val avTransport = firstServiceControlUrl(root, "AVTransport")
             ?: error("Missing AVTransport service")
         val topology = firstServiceControlUrl(root, "ZoneGroupTopology")
+        val renderingControl = firstServiceControlUrl(root, "RenderingControl")
 
         return SonosPlayer(
             roomName = roomName,
@@ -23,7 +24,8 @@ object SonosXml {
             baseUrl = baseUrl(locationUrl),
             services = SonosServices(
                 avTransportControlUrl = avTransport,
-                zoneGroupTopologyControlUrl = topology
+                zoneGroupTopologyControlUrl = topology,
+                renderingControlControlUrl = renderingControl
             )
         )
     }

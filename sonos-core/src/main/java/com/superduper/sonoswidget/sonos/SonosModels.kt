@@ -2,7 +2,21 @@ package com.superduper.sonoswidget.sonos
 
 data class SonosServices(
     val avTransportControlUrl: String,
-    val zoneGroupTopologyControlUrl: String?
+    val zoneGroupTopologyControlUrl: String?,
+    val renderingControlControlUrl: String? = null
+)
+
+/**
+ * A snapshot of a coordinator's playback so an announcement can interrupt it and
+ * then put everything back. Restoring streaming-service position is best-effort.
+ */
+data class TransportSnapshot(
+    val state: PlaybackState,
+    val volume: Int?,
+    val currentUri: String?,
+    val currentUriMetaData: String?,
+    val trackNumber: Int?,
+    val relTime: String?
 )
 
 data class SonosPlayer(

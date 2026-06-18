@@ -3,10 +3,13 @@ package com.superduper.sonoswidget.sonos
 object SonosSoap {
     private const val AV_TRANSPORT = "urn:schemas-upnp-org:service:AVTransport:1"
     private const val ZONE_GROUP_TOPOLOGY = "urn:schemas-upnp-org:service:ZoneGroupTopology:1"
+    private const val RENDERING_CONTROL = "urn:schemas-upnp-org:service:RenderingControl:1"
 
     fun avTransportSoapAction(action: String): String = "\"$AV_TRANSPORT#$action\""
 
     fun zoneGroupTopologySoapAction(action: String): String = "\"$ZONE_GROUP_TOPOLOGY#$action\""
+
+    fun renderingControlSoapAction(action: String): String = "\"$RENDERING_CONTROL#$action\""
 
     fun avTransportEnvelope(action: String, body: String = ""): String {
         return envelope(
@@ -18,6 +21,66 @@ object SonosSoap {
 
     fun zoneGroupTopologyEnvelope(action: String, body: String = ""): String {
         return envelope(action = action, service = ZONE_GROUP_TOPOLOGY, body = body)
+    }
+
+    fun renderingControlEnvelope(action: String, body: String = ""): String {
+        return envelope(
+            action = action,
+            service = RENDERING_CONTROL,
+            body = "<InstanceID>0</InstanceID><Channel>Master</Channel>$body"
+        )
+    }
+
+    /** AVTransport SetAVTransportURI. URI and DIDL metadata are escaped for XML. */
+    fun setAvTransportUriEnvelope(uri: String, metadata: String): String {
+        return avTransportEnvelope(
+            action = "SetAVTransportURI",
+            body = "<CurrentURI>${escapeXml(uri)}</CurrentURI>" +
+                "<CurrentURIMetaData>${escapeXml(metadata)}</CurrentURIMetaData>"
+        )
+    }
+
+    fun setVolumeEnvelope(volume: Int): String {
+        return renderingControlEnvelope(
+            action = "SetVolume",
+            body = "<DesiredVolume>${volume.coerceIn(0, 100)}</DesiredVolume>"
+        )
+    }
+
+    fun seekEnvelope(unit: String, target: String): String {
+        return avTransportEnvelope(
+            action = "Seek",
+            body = "<Unit>$unit</Unit><Target>${escapeXml(target)}</Target>"
+        )
+    }
+
+    fun parseVolume(responseXml: String): Int? =
+        SonosXml.parseSoapValue(responseXml, "CurrentVolume")?.toIntOrNull()
+
+    fun parseCurrentUri(responseXml: String): String? =
+        SonosXml.parseSoapValue(responseXml, "CurrentURI")
+
+    fun parseCurrentUriMetaData(responseXml: String): String? =
+        SonosXml.parseSoapValue(responseXml, "CurrentURIMetaData")
+
+    /** GetPositionInfo reports the in-queue track index in <Track>. */
+    fun parseTrackNumber(responseXml: String): Int? =
+        SonosXml.parseSoapValue(responseXml, "Track")?.toIntOrNull()
+
+    fun parseRelTime(responseXml: String): String? =
+        SonosXml.parseSoapValue(responseXml, "RelTime")?.takeIf { it.isNotBlank() }
+
+    fun escapeXml(value: String): String = buildString(value.length) {
+        for (char in value) {
+            when (char) {
+                '&' -> append("&amp;")
+                '<' -> append("&lt;")
+                '>' -> append("&gt;")
+                '"' -> append("&quot;")
+                '\'' -> append("&apos;")
+                else -> append(char)
+            }
+        }
     }
 
     fun parsePlaybackState(responseXml: String): PlaybackState {
