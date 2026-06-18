@@ -29,6 +29,9 @@ class WearTalkActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(buildContent())
+
+        // Test / automation hook: forward a fixed phrase without the mic.
+        intent?.getStringExtra(EXTRA_SEND_NOW)?.trim()?.takeIf { it.isNotEmpty() }?.let { sendToPhone(it) }
     }
 
     private fun buildContent(): View {
@@ -110,6 +113,7 @@ class WearTalkActivity : Activity() {
     companion object {
         private const val REQ_SPEECH = 1
         private const val ANNOUNCE_PATH = "/announce"
+        const val EXTRA_SEND_NOW = "send_now"
 
         private val COLOR_BACKGROUND = Color.rgb(8, 13, 18)
         private val COLOR_MUTED = Color.rgb(158, 174, 188)
