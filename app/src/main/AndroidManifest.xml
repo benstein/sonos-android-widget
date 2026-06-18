@@ -47,15 +47,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Reached from MainActivity's "Talk to speakers" button (and the
+             announce_now deep-link). Deliberately not a second launcher icon, so
+             the "Sonos Widget" icon always opens the widget config. -->
         <activity
             android:name=".announce.TalkActivity"
             android:label="Sonos Talk"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="true" />
 
         <service
             android:name=".announce.AnnounceService"
