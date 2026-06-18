@@ -4,13 +4,14 @@ plugins {
 }
 
 android {
-    namespace = "com.superduper.sonoswidget"
+    namespace = "com.superduper.sonoswidget.wear"
     compileSdk = 36
 
     defaultConfig {
+        // Must match the phone app for the Wear Data Layer to pair the two.
         applicationId = "com.superduper.sonoswidget"
-        minSdk = 36
-        targetSdk = 36
+        minSdk = 30
+        targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
     }
@@ -18,14 +19,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    buildFeatures {
-        buildConfig = true
-    }
-
-    testOptions {
-        unitTests.isReturnDefaultValues = true
     }
 }
 
@@ -36,9 +29,5 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":sonos-core"))
-    // Wear Data Layer, for receiving announcement text from the watch.
     implementation("com.google.android.gms:play-services-wearable:18.2.0")
-
-    testImplementation("junit:junit:4.13.2")
 }

@@ -17,3 +17,4 @@ dependencyResolutionManagement {
 rootProject.name = "SonosWidget"
 include(":app")
 include(":sonos-core")
+include(":wear")
