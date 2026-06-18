@@ -81,7 +81,10 @@ Gradle modules:
 `:app` voice-announce (`app/src/main/java/com/superduper/sonoswidget/announce/`):
 
 - `TalkActivity.kt` — push-to-talk screen: speech → 3s cancel window → `AnnounceService`.
-  Also a launcher icon ("Sonos Talk") and an `announce_now` intent deep-link.
+  Reached from MainActivity's "Talk to speakers" button and the `announce_now`
+  deep-link. Deliberately NOT a launcher activity — a second launcher icon made the
+  package's launcher target ambiguous, so the app ships one icon ("Sonos Remote",
+  `app_name`) for both the widget config and push-to-talk.
 - `WavTextToSpeech.kt` — on-device TTS → WAV plus playback duration from the header.
 - `ClipServer.kt` — hand-rolled `ServerSocket` HTTP server; serves the WAV to all
   speakers concurrently (handles Range), reachable at the phone's Wi-Fi IP (`LocalAddress.kt`).

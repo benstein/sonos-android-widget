@@ -68,6 +68,14 @@ class MainActivity : Activity() {
             setPadding(dp(22), dp(22), dp(22), dp(22))
 
             addView(header(), matchWrap())
+
+            addView(card {
+                addView(label("Talk"), matchWrap())
+                addView(primaryButton("Talk to speakers") {
+                    startActivity(Intent(this@MainActivity, TalkActivity::class.java))
+                }, topMargin(matchWrap(), 14))
+            }, topMargin(matchWrap(), 22))
+
             addView(card {
                 addView(label("Selected room"), matchWrap())
                 addView(status, topMargin(matchWrap(), 8))
@@ -75,13 +83,6 @@ class MainActivity : Activity() {
                 addView(primaryButton("Save typed room") {
                     saveRoom(roomInput.text?.toString().orEmpty().trim())
                 }, topMargin(matchWrap(), 12))
-            }, topMargin(matchWrap(), 22))
-
-            addView(card {
-                addView(label("Talk"), matchWrap())
-                addView(primaryButton("Talk to speakers") {
-                    startActivity(Intent(this@MainActivity, TalkActivity::class.java))
-                }, topMargin(matchWrap(), 14))
             }, topMargin(matchWrap(), 14))
 
             addView(card {
@@ -123,14 +124,14 @@ class MainActivity : Activity() {
             addView(LinearLayout(this@MainActivity).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(this@MainActivity).apply {
-                    text = "Sonos Widget"
+                    text = "Sonos Remote"
                     textSize = 28f
                     setTextColor(COLOR_TEXT)
                     setTypeface(typeface, Typeface.BOLD)
                     includeFontPadding = false
                 }, matchWrap())
                 addView(TextView(this@MainActivity).apply {
-                    text = "Local controls for the whole-house group"
+                    text = "Push-to-talk + widget setup"
                     textSize = 14f
                     setTextColor(COLOR_MUTED)
                     includeFontPadding = false

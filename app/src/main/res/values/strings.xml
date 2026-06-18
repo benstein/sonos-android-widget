@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Sonos Widget</string>
+    <string name="app_name">Sonos Remote</string>
     <string name="widget_name">Sonos Controller</string>
 </resources>
