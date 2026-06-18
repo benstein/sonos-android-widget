@@ -1,27 +1,19 @@
 plugins {
-    id("com.android.application")
+    id("com.android.library")
     id("org.jetbrains.kotlin.android")
 }
 
 android {
-    namespace = "com.superduper.sonoswidget"
+    namespace = "com.superduper.sonoswidget.sonos"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.superduper.sonoswidget"
         minSdk = 36
-        targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    buildFeatures {
-        buildConfig = true
     }
 
     testOptions {
@@ -36,7 +28,5 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":sonos-core"))
-
     testImplementation("junit:junit:4.13.2")
 }
