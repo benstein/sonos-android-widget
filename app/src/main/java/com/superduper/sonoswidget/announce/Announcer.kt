@@ -45,6 +45,6 @@ class Announcer(private val context: Context) {
 
     companion object {
         private const val TAG = "SonosWidget"
-        const val DEFAULT_VOLUME = 35
+        const val DEFAULT_VOLUME = 75
     }
 }

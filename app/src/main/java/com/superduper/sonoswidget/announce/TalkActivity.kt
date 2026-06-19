@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -20,9 +21,11 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
 import com.superduper.sonoswidget.MainActivity
 import com.superduper.sonoswidget.R
+import com.superduper.sonoswidget.storage.SonosPrefs
 
 /**
  * Push-to-talk screen: speak an announcement, review the transcription during a short
@@ -30,20 +33,24 @@ import com.superduper.sonoswidget.R
  */
 class TalkActivity : Activity() {
 
+    private lateinit var prefs: SonosPrefs
     private lateinit var status: TextView
     private lateinit var talkButton: Button
     private lateinit var cancelButton: Button
+    private lateinit var volumeLabel: TextView
+    private lateinit var volumeBar: SeekBar
     private var countdown: CountDownTimer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        prefs = SonosPrefs(this)
         requestPermissionsIfNeeded()
         setContentView(buildContent())
         showIdle()
 
         // Deep-link / automation entry point: announce a fixed phrase without the mic.
         intent?.getStringExtra(EXTRA_ANNOUNCE_NOW)?.trim()?.takeIf { it.isNotEmpty() }?.let { text ->
-            AnnounceService.start(this, text)
+            AnnounceService.start(this, text, prefs.announceVolume)
             status.text = "Announcing “$text”…"
         }
     }
@@ -81,6 +88,7 @@ class TalkActivity : Activity() {
             addView(status, topMargin(matchWrap(), 36))
             addView(talkButton, topMargin(matchWrap(), 36))
             addView(cancelButton, topMargin(matchWrap(), 14))
+            addView(buildVolumeControl(), topMargin(matchWrap(), 32))
         }
 
         return FrameLayout(this).apply {
@@ -98,6 +106,39 @@ class TalkActivity : Activity() {
                 setPadding(0, bars.top, 0, bars.bottom)
                 insets
             }
+        }
+    }
+
+    private fun buildVolumeControl(): View {
+        volumeLabel = TextView(this).apply {
+            textSize = 13f
+            setTextColor(COLOR_MUTED)
+            gravity = Gravity.CENTER
+            includeFontPadding = false
+        }
+        volumeBar = SeekBar(this).apply {
+            max = 100
+            progress = prefs.announceVolume
+            progressTintList = ColorStateList.valueOf(COLOR_ACCENT)
+            thumbTintList = ColorStateList.valueOf(COLOR_ACCENT)
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar, value: Int, fromUser: Boolean) {
+                    volumeLabel.text = "Announcement volume: $value"
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar) {}
+
+                override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    prefs.announceVolume = seekBar.progress
+                }
+            })
+        }
+        volumeLabel.text = "Announcement volume: ${volumeBar.progress}"
+
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(volumeLabel, matchWrap())
+            addView(volumeBar, topMargin(matchWrap(), 6))
         }
     }
 
@@ -146,7 +187,7 @@ class TalkActivity : Activity() {
             }
 
             override fun onFinish() {
-                AnnounceService.start(this@TalkActivity, text)
+                AnnounceService.start(this@TalkActivity, text, prefs.announceVolume)
                 showIdle()
                 status.text = "Sent “$text”"
             }

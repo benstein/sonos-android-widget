@@ -4,6 +4,7 @@ import android.os.PowerManager
 import android.util.Log
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.WearableListenerService
+import com.superduper.sonoswidget.storage.SonosPrefs
 
 /**
  * Receives announcement text sent from the watch over the Data Layer and runs the
@@ -24,7 +25,8 @@ class AnnounceMessageListener : WearableListenerService() {
         val wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_TAG)
         wakeLock.acquire(WAKE_TIMEOUT_MS)
         try {
-            val result = Announcer(applicationContext).announce(text, Announcer.DEFAULT_VOLUME)
+            val volume = SonosPrefs(applicationContext).announceVolume
+            val result = Announcer(applicationContext).announce(text, volume)
             Log.i(TAG, "Watch announce result: ${result.message}")
         } catch (error: Exception) {
             Log.w(TAG, "Watch announce failed", error)

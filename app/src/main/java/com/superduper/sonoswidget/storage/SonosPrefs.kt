@@ -15,6 +15,13 @@ class SonosPrefs(context: Context) {
             prefs.edit().putString(KEY_SELECTED_ROOM, value).apply()
         }
 
+    /** Volume (0-100) the announcement plays at; shared by the phone and watch paths. */
+    var announceVolume: Int
+        get() = prefs.getInt(KEY_ANNOUNCE_VOLUME, DEFAULT_ANNOUNCE_VOLUME)
+        set(value) {
+            prefs.edit().putInt(KEY_ANNOUNCE_VOLUME, value.coerceIn(0, 100)).apply()
+        }
+
     var cachedCoordinator: SonosPlayer?
         get() {
             val raw = prefs.getString(KEY_CACHED_COORDINATOR, null) ?: return null
@@ -97,5 +104,7 @@ class SonosPrefs(context: Context) {
         private const val KEY_SELECTED_ROOM = "selected_room"
         private const val KEY_CACHED_COORDINATOR = "cached_coordinator"
         private const val KEY_CACHED_WIDGET_STATE = "cached_widget_state"
+        private const val KEY_ANNOUNCE_VOLUME = "announce_volume"
+        const val DEFAULT_ANNOUNCE_VOLUME = 75
     }
 }
