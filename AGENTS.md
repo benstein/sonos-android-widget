@@ -77,19 +77,32 @@ Gradle modules:
   `NetworkAnnounceTransport` is the real UPnP impl (adds `RenderingControl` volume
   and the extra AVTransport calls). `SonosGateway` was intentionally left unchanged
   so the widget's fakes/tests still hold; announce SOAP lives here instead.
+  `announce(...)` takes `targetRooms` (empty = all) to limit which speakers hear it.
+- `sonos/SonosTopology.kt` — pure helpers mapping target room names to players /
+  group coordinators (empty = all). Shared by the announce and favorite-play paths.
+- `sonos/SonosFavoritePlayer.kt` — plays a Sonos Favorite (matched by name) across
+  the target rooms: groups them under an alphabetical lead and plays it there,
+  leaving them grouped (no restore). Behind the `FavoritePlayTransport` seam;
+  `NetworkFavoritePlayer` browses `FV:2` (ContentDirectory) and joins players via
+  `x-rincon:` group URIs. Used for the "David's Song" one-tap button.
 
 `:app` voice-announce (`app/src/main/java/com/superduper/sonoswidget/announce/`):
 
-- `TalkActivity.kt` — push-to-talk screen: speech → 3s cancel window → `AnnounceService`.
-  Reached from MainActivity's "Talk to speakers" button and the `announce_now`
-  deep-link. Deliberately NOT a launcher activity — a second launcher icon made the
-  package's launcher target ambiguous, so the app ships one icon ("Sonos Remote",
-  `app_name`) for both the widget config and push-to-talk.
+- `TalkActivity.kt` — the **launcher home** screen ("Sonos Remote" icon): the
+  ambient-console push-to-talk UI (speech → 3s cancel window → `AnnounceService`), an
+  announcement-volume slider, a one-tap **David's Song pill** (→ `QuickPlayService`),
+  and a corner gear that opens `MainActivity` (Settings). There is exactly ONE
+  launcher activity — a second one made the launcher target ambiguous. Also handles
+  the `announce_now` deep-link. Type lives in `res/font` (Bricolage Grotesque / Hanken
+  Grotesk), not stock Roboto.
 - `WavTextToSpeech.kt` — on-device TTS → WAV plus playback duration from the header.
 - `ClipServer.kt` — hand-rolled `ServerSocket` HTTP server; serves the WAV to all
   speakers concurrently (handles Range), reachable at the phone's Wi-Fi IP (`LocalAddress.kt`).
-- `Announcer.kt` — ties synth → serve → `SonosAnnouncer` together (blocking; on a worker).
+- `Announcer.kt` — ties synth → serve → `SonosAnnouncer` together (blocking; on a
+  worker). Passes the configured `broadcastRooms` through.
 - `AnnounceService.kt` — short foreground service used by the phone-initiated path.
+- `QuickPlayService.kt` — short foreground service that runs `SonosFavoritePlayer`
+  for the David's Song button across `broadcastRooms`.
 - `AnnounceMessageListener.kt` — `WearableListenerService` for the watch path; runs
   `Announcer` synchronously under a wakelock (no FGS, since it runs in the background).
 
@@ -97,8 +110,13 @@ Gradle modules:
 
 - `WearTalkActivity.kt` — watch remote: speech → `MessageClient` send on `/announce`.
 
-- `storage/SonosPrefs.kt` (in `:app`) — selected room (name, UUID, last IP/port) in
-  SharedPreferences.
+- `MainActivity.kt` (in `:app`) — the **Settings** screen (reached via the gear):
+  a **Broadcast speakers** multi-select checklist (persisted to `broadcastRooms`,
+  all-checked = everywhere), a **David's Song** favorite-name field, the widget's
+  single room, and Open Sonos. Both push-to-talk and the song honor `broadcastRooms`.
+- `storage/SonosPrefs.kt` (in `:app`) — widget room, cached coordinator/state,
+  `announceVolume` (default 75), `broadcastRooms` (empty = all), and
+  `quickPlayFavorite` (default "David's Song"), in SharedPreferences.
 - `widget/WidgetRenderer.kt` + `widget/WidgetState.kt` — build the RemoteViews.
   `SonosWidgetProvider`, `WidgetActionReceiver`, and `WidgetUpdater` wire up the
   AppWidget lifecycle, taps, and pushing updated views.
@@ -121,9 +139,9 @@ pushes new RemoteViews.
   sample XML strings.
 - Log tag is `SonosWidget` across all modules.
 - Test classes in `:sonos-core`: `SonosRepositoryTest`, `SonosSoapTest`,
-  `SonosXmlTest`, `SonosAnnouncerTest`, `SonosSoapAnnounceTest`. In `:app`:
-  `BuildConfigSmokeTest`, `SonosAppLauncherTest`, `WidgetStateTest`. Add tests
-  alongside the layer you change.
+  `SonosXmlTest`, `SonosAnnouncerTest`, `SonosSoapAnnounceTest`, `SonosFavoritesTest`,
+  `SonosTopologyTest`, `SonosFavoritePlayerTest`. In `:app`: `BuildConfigSmokeTest`,
+  `SonosAppLauncherTest`, `WidgetStateTest`. Add tests alongside the layer you change.
 
 ## Gotchas
 
