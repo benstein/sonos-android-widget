@@ -6,8 +6,18 @@ import android.content.Context
 import android.os.Bundle
 
 class SonosWidgetProvider : AppWidgetProvider() {
+    override fun onEnabled(context: Context) {
+        WidgetUpdater.schedulePeriodicRefresh(context)
+    }
+
     override fun onUpdate(context: Context, manager: AppWidgetManager, appWidgetIds: IntArray) {
+        // Re-arm the alarm here too, so it's restored after a reboot or app update.
+        WidgetUpdater.schedulePeriodicRefresh(context)
         WidgetUpdater.refreshAsync(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        WidgetUpdater.cancelPeriodicRefresh(context)
     }
 
     override fun onAppWidgetOptionsChanged(
