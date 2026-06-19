@@ -3,6 +3,7 @@ package com.superduper.sonoswidget
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
@@ -12,11 +13,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import com.superduper.sonoswidget.sonos.SonosDiscovery
 import com.superduper.sonoswidget.sonos.SonosRepository
 import com.superduper.sonoswidget.storage.SonosPrefs
@@ -27,6 +30,8 @@ class MainActivity : Activity() {
     private lateinit var status: TextView
     private lateinit var roomInput: EditText
     private lateinit var roomList: LinearLayout
+    private lateinit var broadcastList: LinearLayout
+    private lateinit var favoriteInput: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +41,7 @@ class MainActivity : Activity() {
         setContentView(buildContent())
 
         WidgetUpdater.refreshAsync(this)
+        loadRooms()
     }
 
     private fun buildContent(): View {
@@ -57,9 +63,19 @@ class MainActivity : Activity() {
             background = roundedRect(COLOR_PANEL, dp(16), COLOR_BORDER, 1)
             minHeight = dp(54)
         }
-        roomList = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
+        favoriteInput = EditText(this).apply {
+            hint = SonosPrefs.DEFAULT_QUICK_PLAY_FAVORITE
+            setSingleLine(true)
+            setText(prefs.quickPlayFavorite)
+            textSize = 16f
+            setTextColor(COLOR_TEXT)
+            setHintTextColor(COLOR_MUTED)
+            setPadding(dp(16), 0, dp(16), 0)
+            background = roundedRect(COLOR_PANEL, dp(16), COLOR_BORDER, 1)
+            minHeight = dp(54)
         }
+        roomList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        broadcastList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -68,22 +84,44 @@ class MainActivity : Activity() {
             addView(header(), matchWrap())
 
             addView(card {
-                addView(label("Selected room"), matchWrap())
+                addView(label("Broadcast speakers"), matchWrap())
+                addView(hint("Checked rooms play push-to-talk and the song. All checked = everywhere."),
+                    topMargin(matchWrap(), 6))
+                addView(broadcastList, topMargin(matchWrap(), 10))
+                addView(secondaryButton("Refresh rooms") { loadRooms() }, topMargin(matchWrap(), 12))
+            }, topMargin(matchWrap(), 22))
+
+            addView(card {
+                addView(label("David's Song"), matchWrap())
+                addView(hint("The Sonos Favorite the one-tap button plays."), topMargin(matchWrap(), 6))
+                addView(favoriteInput, topMargin(matchWrap(), 12))
+                addView(primaryButton("Save song name") {
+                    val name = favoriteInput.text?.toString()?.trim().orEmpty()
+                    if (name.isEmpty()) {
+                        toast("Enter a favorite name")
+                    } else {
+                        prefs.quickPlayFavorite = name
+                        toast("Saved “$name”")
+                    }
+                }, topMargin(matchWrap(), 12))
+            }, topMargin(matchWrap(), 14))
+
+            addView(card {
+                addView(label("Widget room"), matchWrap())
                 addView(status, topMargin(matchWrap(), 8))
                 addView(roomInput, topMargin(matchWrap(), 18))
                 addView(primaryButton("Save typed room") {
                     saveRoom(roomInput.text?.toString().orEmpty().trim())
                 }, topMargin(matchWrap(), 12))
-            }, topMargin(matchWrap(), 22))
+            }, topMargin(matchWrap(), 14))
 
             addView(card {
                 addView(label("Setup"), matchWrap())
-                addView(secondaryButton("Find Sonos rooms") { loadRooms() }, topMargin(matchWrap(), 14))
                 addView(primaryButton("Open Sonos") {
                     if (!SonosAppLauncher.open(this@MainActivity)) {
-                        status.text = "Sonos app not found"
+                        toast("Sonos app not found")
                     }
-                }, topMargin(matchWrap(), 10))
+                }, topMargin(matchWrap(), 14))
             }, topMargin(matchWrap(), 14))
 
             addView(roomList, topMargin(matchWrap(), 14))
@@ -115,14 +153,14 @@ class MainActivity : Activity() {
             addView(LinearLayout(this@MainActivity).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(this@MainActivity).apply {
-                    text = "Widget Setup"
+                    text = "Settings"
                     textSize = 28f
                     setTextColor(COLOR_TEXT)
                     setTypeface(typeface, Typeface.BOLD)
                     includeFontPadding = false
                 }, matchWrap())
                 addView(TextView(this@MainActivity).apply {
-                    text = "Pick a room and find your system"
+                    text = "Broadcast, song, and widget"
                     textSize = 14f
                     setTextColor(COLOR_MUTED)
                     includeFontPadding = false
@@ -182,6 +220,15 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun hint(text: String): TextView {
+        return TextView(this).apply {
+            this.text = text
+            textSize = 13f
+            setTextColor(COLOR_MUTED)
+            includeFontPadding = false
+        }
+    }
+
     private fun maybeRequestLocalNetworkPermission() {
         if (checkSelfPermission(Manifest.permission.NEARBY_WIFI_DEVICES) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.NEARBY_WIFI_DEVICES), 100)
@@ -189,7 +236,8 @@ class MainActivity : Activity() {
     }
 
     private fun loadRooms() {
-        status.text = "Finding Sonos rooms..."
+        broadcastList.removeAllViews()
+        broadcastList.addView(hint("Finding rooms…"), matchWrap())
         roomList.removeAllViews()
 
         thread {
@@ -198,19 +246,42 @@ class MainActivity : Activity() {
             }.getOrDefault(emptyList())
 
             runOnUiThread {
+                broadcastList.removeAllViews()
                 if (rooms.isEmpty()) {
-                    status.text = "No rooms found. Type the room name above."
+                    broadcastList.addView(hint("No rooms found. Make sure you're on home Wi-Fi."), matchWrap())
                     return@runOnUiThread
                 }
+                renderBroadcastCheckboxes(rooms)
 
-                status.text = selectedRoomText()
                 roomList.addView(card {
-                    addView(label("Rooms found"), matchWrap())
+                    addView(label("Set widget room"), matchWrap())
                     rooms.forEachIndexed { index, room ->
                         addView(roomButton(room), topMargin(matchWrap(), if (index == 0) 14 else 10))
                     }
                 }, matchWrap())
             }
+        }
+    }
+
+    private fun renderBroadcastCheckboxes(rooms: List<String>) {
+        val selected = prefs.broadcastRooms
+        val boxes = mutableListOf<CheckBox>()
+        rooms.forEachIndexed { index, room ->
+            val box = CheckBox(this).apply {
+                text = room
+                textSize = 16f
+                isChecked = selected.isEmpty() || room in selected
+                setTextColor(COLOR_TEXT)
+                buttonTintList = ColorStateList.valueOf(COLOR_ACCENT)
+                minHeight = dp(44)
+                setOnCheckedChangeListener { _, _ ->
+                    val checked = boxes.filter { it.isChecked }.map { it.text.toString() }.toSet()
+                    // All (or none) checked stores empty = "all speakers".
+                    prefs.broadcastRooms = if (checked.size == rooms.size) emptySet() else checked
+                }
+            }
+            boxes += box
+            broadcastList.addView(box, topMargin(matchWrap(), if (index == 0) 0 else 4))
         }
     }
 
@@ -230,6 +301,10 @@ class MainActivity : Activity() {
 
     private fun selectedRoomText(): String {
         return prefs.selectedRoom ?: "No room selected"
+    }
+
+    private fun toast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
     private fun roundedRect(color: Int, radius: Int, strokeColor: Int?, strokeWidth: Int): GradientDrawable {
