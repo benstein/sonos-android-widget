@@ -61,6 +61,11 @@
             android:foregroundServiceType="shortService" />
 
         <service
+            android:name=".announce.QuickPlayService"
+            android:exported="false"
+            android:foregroundServiceType="shortService" />
+
+        <service
             android:name=".announce.AnnounceMessageListener"
             android:exported="true">
             <intent-filter>

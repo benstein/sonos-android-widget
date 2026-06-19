@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
+import com.superduper.sonoswidget.storage.SonosPrefs
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
@@ -43,7 +44,8 @@ class AnnounceService : Service() {
         }
 
         thread(name = "announce-worker") {
-            val result = runCatching { Announcer(applicationContext).announce(text, volume) }
+            val rooms = SonosPrefs(applicationContext).broadcastRooms
+            val result = runCatching { Announcer(applicationContext).announce(text, volume, rooms) }
                 .getOrElse { Announcer.Result(0, "Announce failed") }
             Log.i(TAG, "Announce result: ${result.message}")
             toast(result.message)

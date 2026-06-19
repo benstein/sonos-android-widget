@@ -22,6 +22,20 @@ class SonosPrefs(context: Context) {
             prefs.edit().putInt(KEY_ANNOUNCE_VOLUME, value.coerceIn(0, 100)).apply()
         }
 
+    /** Rooms the broadcast and song play target. Empty = all speakers. */
+    var broadcastRooms: Set<String>
+        get() = prefs.getStringSet(KEY_BROADCAST_ROOMS, emptySet())?.toSet() ?: emptySet()
+        set(value) {
+            prefs.edit().putStringSet(KEY_BROADCAST_ROOMS, value).apply()
+        }
+
+    /** Name of the Sonos Favorite the one-tap button plays. */
+    var quickPlayFavorite: String
+        get() = prefs.getString(KEY_QUICK_PLAY_FAVORITE, DEFAULT_QUICK_PLAY_FAVORITE) ?: DEFAULT_QUICK_PLAY_FAVORITE
+        set(value) {
+            prefs.edit().putString(KEY_QUICK_PLAY_FAVORITE, value).apply()
+        }
+
     var cachedCoordinator: SonosPlayer?
         get() {
             val raw = prefs.getString(KEY_CACHED_COORDINATOR, null) ?: return null
@@ -105,6 +119,9 @@ class SonosPrefs(context: Context) {
         private const val KEY_CACHED_COORDINATOR = "cached_coordinator"
         private const val KEY_CACHED_WIDGET_STATE = "cached_widget_state"
         private const val KEY_ANNOUNCE_VOLUME = "announce_volume"
+        private const val KEY_BROADCAST_ROOMS = "broadcast_rooms"
+        private const val KEY_QUICK_PLAY_FAVORITE = "quick_play_favorite"
         const val DEFAULT_ANNOUNCE_VOLUME = 75
+        const val DEFAULT_QUICK_PLAY_FAVORITE = "David's Song"
     }
 }

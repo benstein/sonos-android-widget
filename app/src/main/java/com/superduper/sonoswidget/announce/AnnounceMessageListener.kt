@@ -25,8 +25,8 @@ class AnnounceMessageListener : WearableListenerService() {
         val wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_TAG)
         wakeLock.acquire(WAKE_TIMEOUT_MS)
         try {
-            val volume = SonosPrefs(applicationContext).announceVolume
-            val result = Announcer(applicationContext).announce(text, volume)
+            val prefs = SonosPrefs(applicationContext)
+            val result = Announcer(applicationContext).announce(text, prefs.announceVolume, prefs.broadcastRooms)
             Log.i(TAG, "Watch announce result: ${result.message}")
         } catch (error: Exception) {
             Log.w(TAG, "Watch announce failed", error)

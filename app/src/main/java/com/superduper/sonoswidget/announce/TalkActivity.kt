@@ -118,6 +118,7 @@ class TalkActivity : Activity() {
         }
 
         val volume = buildVolumeControl()
+        val song = buildSongPill()
 
         val column = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -126,9 +127,10 @@ class TalkActivity : Activity() {
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f
             ))
             addView(volume, wrap())
+            addView(song, wrap())
         }
 
-        entranceViews = listOf(header, micStack, status, volume)
+        entranceViews = listOf(header, micStack, status, volume, song)
 
         return FrameLayout(this).apply {
             background = GradientDrawable(
@@ -231,9 +233,47 @@ class TalkActivity : Activity() {
 
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(34), dp(20), dp(34), dp(30))
+            setPadding(dp(34), dp(20), dp(34), dp(12))
             addView(volumeLabel, wrap())
             addView(volumeBar, topMargin(wrap(), 12))
+        }
+    }
+
+    /** A one-tap pill that plays the configured Sonos Favorite on the broadcast speakers. */
+    private fun buildSongPill(): View {
+        val icon = ImageView(this).apply {
+            setImageResource(R.drawable.ic_music_note)
+            setColorFilter(COLOR_ACCENT)
+        }
+        val label = TextView(this).apply {
+            text = prefs.quickPlayFavorite
+            textSize = 15f
+            setTextColor(COLOR_TEXT)
+            typeface = fontSemibold
+            includeFontPadding = false
+        }
+        val pill = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            background = pill(COLOR_PANEL, dp(27))
+            setPadding(dp(20), dp(15), dp(20), dp(15))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                QuickPlayService.start(this@TalkActivity)
+                status.text = "Playing ${prefs.quickPlayFavorite}…"
+            }
+            addView(icon, LinearLayout.LayoutParams(dp(22), dp(22)).apply { rightMargin = dp(10) })
+            addView(label, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ))
+        }
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(34), 0, dp(34), dp(28))
+            addView(pill, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ))
         }
     }
 

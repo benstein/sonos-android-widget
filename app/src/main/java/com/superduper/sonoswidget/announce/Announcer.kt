@@ -14,7 +14,7 @@ class Announcer(private val context: Context) {
 
     data class Result(val speakersReached: Int, val message: String)
 
-    fun announce(text: String, volume: Int): Result {
+    fun announce(text: String, volume: Int, targetRooms: Set<String> = emptySet()): Result {
         val clip = WavTextToSpeech(context).synthesize(text)
             ?: return Result(0, "Couldn't create the announcement audio")
 
@@ -28,7 +28,7 @@ class Announcer(private val context: Context) {
             Log.i(TAG, "Announcing \"$text\" via $url at volume $volume")
 
             val transport = NetworkAnnounceTransport(SonosDiscovery(context))
-            val outcome = SonosAnnouncer(transport).announce(url, volume, clip.durationMs)
+            val outcome = SonosAnnouncer(transport).announce(url, volume, clip.durationMs, targetRooms)
 
             if (outcome.speakersReached == 0) {
                 Result(0, "No Sonos speakers found")
