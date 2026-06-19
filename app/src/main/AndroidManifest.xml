@@ -38,8 +38,9 @@
             android:name=".WidgetActionReceiver"
             android:exported="true" />
 
+        <!-- Push-to-talk is the home screen (the launcher icon). -->
         <activity
-            android:name=".MainActivity"
+            android:name=".announce.TalkActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -47,12 +48,11 @@
             </intent-filter>
         </activity>
 
-        <!-- Reached from MainActivity's "Talk to speakers" button (and the
-             announce_now deep-link). Deliberately not a second launcher icon, so
-             the "Sonos Widget" icon always opens the widget config. -->
+        <!-- Widget setup: reached from the gear on the talk screen, the widget
+             body tap, and the announce_now deep-link. Not a launcher icon. -->
         <activity
-            android:name=".announce.TalkActivity"
-            android:label="Sonos Talk"
+            android:name=".MainActivity"
+            android:label="Widget Setup"
             android:exported="true" />
 
         <service

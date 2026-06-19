@@ -2,7 +2,6 @@ package com.superduper.sonoswidget
 
 import android.Manifest
 import android.app.Activity
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
@@ -18,7 +17,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import com.superduper.sonoswidget.announce.TalkActivity
 import com.superduper.sonoswidget.sonos.SonosDiscovery
 import com.superduper.sonoswidget.sonos.SonosRepository
 import com.superduper.sonoswidget.storage.SonosPrefs
@@ -70,20 +68,13 @@ class MainActivity : Activity() {
             addView(header(), matchWrap())
 
             addView(card {
-                addView(label("Talk"), matchWrap())
-                addView(primaryButton("Talk to speakers") {
-                    startActivity(Intent(this@MainActivity, TalkActivity::class.java))
-                }, topMargin(matchWrap(), 14))
-            }, topMargin(matchWrap(), 22))
-
-            addView(card {
                 addView(label("Selected room"), matchWrap())
                 addView(status, topMargin(matchWrap(), 8))
                 addView(roomInput, topMargin(matchWrap(), 18))
                 addView(primaryButton("Save typed room") {
                     saveRoom(roomInput.text?.toString().orEmpty().trim())
                 }, topMargin(matchWrap(), 12))
-            }, topMargin(matchWrap(), 14))
+            }, topMargin(matchWrap(), 22))
 
             addView(card {
                 addView(label("Setup"), matchWrap())
@@ -124,14 +115,14 @@ class MainActivity : Activity() {
             addView(LinearLayout(this@MainActivity).apply {
                 orientation = LinearLayout.VERTICAL
                 addView(TextView(this@MainActivity).apply {
-                    text = "Sonos Remote"
+                    text = "Widget Setup"
                     textSize = 28f
                     setTextColor(COLOR_TEXT)
                     setTypeface(typeface, Typeface.BOLD)
                     includeFontPadding = false
                 }, matchWrap())
                 addView(TextView(this@MainActivity).apply {
-                    text = "Push-to-talk + widget setup"
+                    text = "Pick a room and find your system"
                     textSize = 14f
                     setTextColor(COLOR_MUTED)
                     includeFontPadding = false

@@ -17,8 +17,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.superduper.sonoswidget.MainActivity
+import com.superduper.sonoswidget.R
 
 /**
  * Push-to-talk screen: speak an announcement, review the transcription during a short
@@ -79,17 +83,32 @@ class TalkActivity : Activity() {
             addView(cancelButton, topMargin(matchWrap(), 14))
         }
 
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
+        return FrameLayout(this).apply {
             setBackgroundColor(COLOR_BACKGROUND)
-            addView(content, matchWrap())
+            addView(content, FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            ))
+            addView(settingsIcon(), FrameLayout.LayoutParams(dp(44), dp(44), Gravity.TOP or Gravity.END).apply {
+                topMargin = dp(8)
+                marginEnd = dp(8)
+            })
             setOnApplyWindowInsetsListener { _, insets ->
                 val bars = insets.getInsets(WindowInsets.Type.systemBars())
                 setPadding(0, bars.top, 0, bars.bottom)
                 insets
             }
         }
+    }
+
+    private fun settingsIcon(): ImageView = ImageView(this).apply {
+        setImageResource(R.drawable.ic_settings)
+        setColorFilter(COLOR_MUTED)
+        contentDescription = "Widget setup"
+        setPadding(dp(10), dp(10), dp(10), dp(10))
+        isClickable = true
+        isFocusable = true
+        setOnClickListener { startActivity(Intent(this@TalkActivity, MainActivity::class.java)) }
     }
 
     private fun startListening() {
