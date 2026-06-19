@@ -4,12 +4,15 @@ object SonosSoap {
     private const val AV_TRANSPORT = "urn:schemas-upnp-org:service:AVTransport:1"
     private const val ZONE_GROUP_TOPOLOGY = "urn:schemas-upnp-org:service:ZoneGroupTopology:1"
     private const val RENDERING_CONTROL = "urn:schemas-upnp-org:service:RenderingControl:1"
+    private const val CONTENT_DIRECTORY = "urn:schemas-upnp-org:service:ContentDirectory:1"
 
     fun avTransportSoapAction(action: String): String = "\"$AV_TRANSPORT#$action\""
 
     fun zoneGroupTopologySoapAction(action: String): String = "\"$ZONE_GROUP_TOPOLOGY#$action\""
 
     fun renderingControlSoapAction(action: String): String = "\"$RENDERING_CONTROL#$action\""
+
+    fun contentDirectorySoapAction(action: String): String = "\"$CONTENT_DIRECTORY#$action\""
 
     fun avTransportEnvelope(action: String, body: String = ""): String {
         return envelope(
@@ -29,6 +32,25 @@ object SonosSoap {
             service = RENDERING_CONTROL,
             body = "<InstanceID>0</InstanceID><Channel>Master</Channel>$body"
         )
+    }
+
+    /** ContentDirectory Browse of the FV:2 (Sonos Favorites) container. */
+    fun browseFavoritesEnvelope(): String {
+        return envelope(
+            action = "Browse",
+            service = CONTENT_DIRECTORY,
+            body = "<ObjectID>FV:2</ObjectID>" +
+                "<BrowseFlag>BrowseDirectChildren</BrowseFlag>" +
+                "<Filter>*</Filter>" +
+                "<StartingIndex>0</StartingIndex>" +
+                "<RequestedCount>200</RequestedCount>" +
+                "<SortCriteria></SortCriteria>"
+        )
+    }
+
+    fun parseFavorites(browseResponseXml: String): List<SonosFavorite> {
+        val result = SonosXml.parseSoapValue(browseResponseXml, "Result") ?: return emptyList()
+        return SonosXml.parseFavorites(result)
     }
 
     /** AVTransport SetAVTransportURI. URI and DIDL metadata are escaped for XML. */

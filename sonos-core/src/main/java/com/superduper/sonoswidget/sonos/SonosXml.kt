@@ -17,6 +17,7 @@ object SonosXml {
             ?: error("Missing AVTransport service")
         val topology = firstServiceControlUrl(root, "ZoneGroupTopology")
         val renderingControl = firstServiceControlUrl(root, "RenderingControl")
+        val contentDirectory = firstServiceControlUrl(root, "ContentDirectory")
 
         return SonosPlayer(
             roomName = roomName,
@@ -25,7 +26,8 @@ object SonosXml {
             services = SonosServices(
                 avTransportControlUrl = avTransport,
                 zoneGroupTopologyControlUrl = topology,
-                renderingControlControlUrl = renderingControl
+                renderingControlControlUrl = renderingControl,
+                contentDirectoryControlUrl = contentDirectory
             )
         )
     }
@@ -74,6 +76,19 @@ object SonosXml {
 
     fun parseSoapValue(xml: String, tagName: String): String? {
         return firstText(parse(xml).documentElement, tagName)
+    }
+
+    /**
+     * Parses the DIDL-Lite from a ContentDirectory Browse of FV:2 into favorites.
+     * Each <item> carries <dc:title>, the playable <res> URI, and <r:resMD> metadata.
+     */
+    fun parseFavorites(resultDidl: String): List<SonosFavorite> {
+        val root = parse(resultDidl).documentElement
+        return elements(root, "item").mapNotNull { item ->
+            val title = firstText(item, "title") ?: return@mapNotNull null
+            val uri = firstText(item, "res") ?: return@mapNotNull null
+            SonosFavorite(title = title, uri = uri, metadata = firstText(item, "resMD").orEmpty())
+        }
     }
 
     private fun parse(xml: String) = DocumentBuilderFactory.newInstance()

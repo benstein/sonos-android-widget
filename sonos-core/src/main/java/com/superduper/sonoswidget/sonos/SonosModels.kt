@@ -3,7 +3,19 @@ package com.superduper.sonoswidget.sonos
 data class SonosServices(
     val avTransportControlUrl: String,
     val zoneGroupTopologyControlUrl: String?,
-    val renderingControlControlUrl: String? = null
+    val renderingControlControlUrl: String? = null,
+    val contentDirectoryControlUrl: String? = null
+)
+
+/**
+ * A Sonos Favorite (from the FV:2 container). [uri] and [metadata] are the exact
+ * playable values stored by the favorite, so they carry the correct music-service
+ * account info — play them with SetAVTransportURI without reconstructing anything.
+ */
+data class SonosFavorite(
+    val title: String,
+    val uri: String,
+    val metadata: String
 )
 
 /**
