@@ -10,8 +10,8 @@ data class AnnounceOutcome(val speakersReached: Int)
  * orchestration in [SonosAnnouncer] can be unit-tested without a network.
  */
 interface AnnounceTransport {
-    /** One player per group; playing on it covers every speaker in that group. */
-    fun coordinators(): List<SonosPlayer>
+    /** One coordinator per group serving [rooms] (empty = all groups). */
+    fun coordinators(rooms: Set<String>): List<SonosPlayer>
     fun snapshot(player: SonosPlayer): TransportSnapshot
     fun applyAnnouncement(player: SonosPlayer, clipUrl: String, volume: Int)
     fun restore(player: SonosPlayer, snapshot: TransportSnapshot)
@@ -28,8 +28,13 @@ class SonosAnnouncer(
     private val transport: AnnounceTransport,
     private val sleeper: (Long) -> Unit = { Thread.sleep(it) }
 ) {
-    fun announce(clipUrl: String, volume: Int, clipDurationMs: Long): AnnounceOutcome {
-        val coordinators = transport.coordinators()
+    fun announce(
+        clipUrl: String,
+        volume: Int,
+        clipDurationMs: Long,
+        targetRooms: Set<String> = emptySet()
+    ): AnnounceOutcome {
+        val coordinators = transport.coordinators(targetRooms)
         if (coordinators.isEmpty()) {
             Log.w(TAG, "No Sonos coordinators found; nothing to announce on")
             return AnnounceOutcome(0)
@@ -76,18 +81,15 @@ class NetworkAnnounceTransport(
     private val httpClient: SonosHttpClient = JavaNetSonosHttpClient()
 ) : AnnounceTransport {
 
-    override fun coordinators(): List<SonosPlayer> {
+    override fun coordinators(rooms: Set<String>): List<SonosPlayer> {
         val players = gateway.discoverPlayers()
         if (players.isEmpty()) return emptyList()
 
         val topology = players.firstNotNullOfOrNull { player ->
             runCatching { gateway.zoneGroupMembers(player) }.getOrNull()?.takeIf { it.isNotEmpty() }
-        } ?: return players // No topology available: treat every player as its own coordinator.
+        } ?: emptyList()
 
-        val coordinatorUuids = topology.map { it.coordinatorUuid.normalizedUuid() }.toSet()
-        return players
-            .filter { it.uuid.normalizedUuid() in coordinatorUuids }
-            .ifEmpty { players }
+        return SonosTopology.coordinatorsForRooms(players, topology, rooms)
     }
 
     override fun snapshot(player: SonosPlayer): TransportSnapshot {
@@ -166,8 +168,6 @@ class NetworkAnnounceTransport(
             soapAction = SonosSoap.renderingControlSoapAction(action),
             envelope = SonosSoap.renderingControlEnvelope(action)
         )
-
-    private fun String.normalizedUuid(): String = removePrefix("uuid:").trim()
 
     companion object {
         private const val TAG = "SonosWidget"

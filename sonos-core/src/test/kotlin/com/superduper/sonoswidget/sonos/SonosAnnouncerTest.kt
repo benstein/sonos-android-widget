@@ -93,9 +93,30 @@ class SonosAnnouncerTest {
             )
         )
 
-        val coordinators = NetworkAnnounceTransport(gateway).coordinators().map { it.roomName }.toSet()
+        val coordinators = NetworkAnnounceTransport(gateway).coordinators(emptySet()).map { it.roomName }.toSet()
 
         assertEquals(setOf("Kitchen", "Office"), coordinators)
+    }
+
+    @Test
+    fun networkTransportFiltersCoordinatorsToSelectedRooms() {
+        val dining = player("Dining Room", "uuid:RINCON_DINING")
+        val kitchen = player("Kitchen", "uuid:RINCON_KITCHEN")
+        val office = player("Office", "uuid:RINCON_OFFICE")
+        val gateway = FakeGateway(
+            players = listOf(dining, kitchen, office),
+            members = listOf(
+                ZoneGroupMember("RINCON_DINING", "Dining Room", "RINCON_KITCHEN"),
+                ZoneGroupMember("RINCON_KITCHEN", "Kitchen", "RINCON_KITCHEN"),
+                ZoneGroupMember("RINCON_OFFICE", "Office", "RINCON_OFFICE")
+            )
+        )
+
+        // Selecting only Dining Room resolves to its coordinator (Kitchen), not Office.
+        val coordinators = NetworkAnnounceTransport(gateway)
+            .coordinators(setOf("Dining Room")).map { it.roomName }.toSet()
+
+        assertEquals(setOf("Kitchen"), coordinators)
     }
 
     @Test
@@ -104,7 +125,7 @@ class SonosAnnouncerTest {
         val b = player("B", "uuid:RINCON_B")
         val gateway = FakeGateway(players = listOf(a, b), members = emptyList())
 
-        val coordinators = NetworkAnnounceTransport(gateway).coordinators().map { it.roomName }.toSet()
+        val coordinators = NetworkAnnounceTransport(gateway).coordinators(emptySet()).map { it.roomName }.toSet()
 
         assertEquals(setOf("A", "B"), coordinators)
     }
@@ -115,7 +136,7 @@ class SonosAnnouncerTest {
     ) : AnnounceTransport {
         val events = mutableListOf<String>()
 
-        override fun coordinators(): List<SonosPlayer> = coords
+        override fun coordinators(rooms: Set<String>): List<SonosPlayer> = coords
 
         override fun snapshot(player: SonosPlayer): TransportSnapshot {
             if (player.roomName in failSnapshotFor) error("snapshot boom")
