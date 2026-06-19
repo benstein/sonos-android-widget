@@ -7,8 +7,12 @@ import android.content.Intent
 class WidgetActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val pending = goAsync()
-        WidgetUpdater.handleActionAsync(context, intent.action) {
-            pending.finish()
+        if (intent.action == ACTION_REFRESH) {
+            WidgetUpdater.refreshAsync(context) { pending.finish() }
+        } else {
+            WidgetUpdater.handleActionAsync(context, intent.action) {
+                pending.finish()
+            }
         }
     }
 
@@ -16,5 +20,6 @@ class WidgetActionReceiver : BroadcastReceiver() {
         const val ACTION_PLAY_PAUSE = "com.superduper.sonoswidget.action.PLAY_PAUSE"
         const val ACTION_NEXT = "com.superduper.sonoswidget.action.NEXT"
         const val ACTION_PREVIOUS = "com.superduper.sonoswidget.action.PREVIOUS"
+        const val ACTION_REFRESH = "com.superduper.sonoswidget.action.REFRESH"
     }
 }

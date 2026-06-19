@@ -1,5 +1,6 @@
 package com.superduper.sonoswidget
 
+import android.app.AlarmManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
@@ -27,6 +28,49 @@ object WidgetUpdater {
         executor.execute {
             refresh(context.applicationContext)
         }
+    }
+
+    fun refreshAsync(context: Context, done: () -> Unit) {
+        executor.execute {
+            try {
+                refresh(context.applicationContext)
+            } finally {
+                done()
+            }
+        }
+    }
+
+    /**
+     * Schedules a lightweight, battery-friendly refresh roughly every 10 minutes. Uses
+     * an inexact, non-wakeup alarm: it never wakes the device (no drain while idle) and
+     * fires opportunistically while the phone is awake — i.e. when you're likely looking
+     * at the widget. Android's `updatePeriodMillis` floor is 30 minutes, so this fills
+     * the gap. Idempotent; safe to call from onUpdate/onEnabled.
+     */
+    fun schedulePeriodicRefresh(context: Context) {
+        val alarmManager = context.getSystemService(AlarmManager::class.java) ?: return
+        alarmManager.setInexactRepeating(
+            AlarmManager.ELAPSED_REALTIME,
+            SystemClock.elapsedRealtime() + REFRESH_INTERVAL_MS,
+            REFRESH_INTERVAL_MS,
+            refreshPendingIntent(context)
+        )
+        Log.i(TAG, "Scheduled periodic widget refresh every ${REFRESH_INTERVAL_MS / 60_000} min")
+    }
+
+    fun cancelPeriodicRefresh(context: Context) {
+        context.getSystemService(AlarmManager::class.java)?.cancel(refreshPendingIntent(context))
+    }
+
+    private fun refreshPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, WidgetActionReceiver::class.java)
+            .setAction(WidgetActionReceiver.ACTION_REFRESH)
+        return PendingIntent.getBroadcast(
+            context,
+            20,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
     }
 
     fun handleActionAsync(context: Context, action: String?, done: () -> Unit) {
@@ -66,10 +110,11 @@ object WidgetUpdater {
         val prefs = SonosPrefs(context)
         val selectedRoom = prefs.selectedRoom
         Log.i(TAG, "Refreshing widgets. selectedRoom=$selectedRoom")
-        val gateway = SonosDiscovery(context)
-        val repository = SonosRepository(gateway)
-        val result = cachedPlayback(gateway, prefs, selectedRoom)
-            ?: repository.currentPlayback(selectedRoom)
+        val repository = SonosRepository(SonosDiscovery(context))
+        // Always re-resolve the coordinator from live topology. The cached coordinator
+        // can be stale (e.g. the room regrouped and it's now a group slave), which made
+        // the widget show "Nothing playing" even while the room was active.
+        val result = repository.currentPlayback(selectedRoom)
         val state = when (result) {
             is SonosResult.Available -> {
                 Log.i(TAG, "Playback available for ${result.playback.roomName}: ${result.playback.state} ${result.playback.track.title}")
@@ -179,28 +224,6 @@ object WidgetUpdater {
         }
     }
 
-    private fun cachedPlayback(
-        gateway: SonosGateway,
-        prefs: SonosPrefs,
-        selectedRoom: String?
-    ): SonosResult.Available? {
-        val cachedCoordinator = prefs.cachedCoordinator ?: return null
-        if (selectedRoom.isNullOrBlank()) return null
-
-        return runCatching {
-            Log.i(TAG, "Trying cached playback room=${cachedCoordinator.roomName} url=${cachedCoordinator.baseUrl}")
-            val playback = gateway.playback(cachedCoordinator).copy(roomName = selectedRoom)
-            SonosResult.Available(
-                playback = playback,
-                selectedPlayer = null,
-                coordinator = cachedCoordinator
-            )
-        }.onFailure { error ->
-            Log.w(TAG, "Cached playback failed; falling back to discovery", error)
-            prefs.cachedCoordinator = null
-        }.getOrNull()
-    }
-
     private fun updateWidgets(context: Context, state: WidgetState) {
         val manager = AppWidgetManager.getInstance(context)
         val ids = manager.getAppWidgetIds(ComponentName(context, SonosWidgetProvider::class.java))
@@ -261,4 +284,5 @@ object WidgetUpdater {
 
     private const val TAG = "SonosWidget"
     private const val SETTLING_REFRESH_DELAY_MS = 1_500L
+    private const val REFRESH_INTERVAL_MS = 10 * 60 * 1000L
 }
